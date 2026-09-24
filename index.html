@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PlacementOS · Accounting Basic pilot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF2F6; --surface:#FFFFFF; --ink:#14213D; --ink-2:#4A5670; --rule:#D3DAE3;
+  --navy:#14213D; --brass:#A9832F; --brass-soft:#F3E9CF; --oxblood:#7A1F2B; --ox-soft:#F6E1E3;
+  --green:#2C6B4C; --green-soft:#DDEFE5; --lock:#9AA5B5;
+  --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1524; --surface:#162038; --ink:#E6EBF2; --ink-2:#A7B2C4; --rule:#2A3654;
+    --navy:#E6EBF2; --brass:#D6B25E; --brass-soft:#3A3220; --oxblood:#E07A86; --ox-soft:#3A1E26;
+    --green:#6CC49A; --green-soft:#17362A; --lock:#56627A;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1524; --surface:#162038; --ink:#E6EBF2; --ink-2:#A7B2C4; --rule:#2A3654;
+  --navy:#E6EBF2; --brass:#D6B25E; --brass-soft:#3A3220; --oxblood:#E07A86; --ox-soft:#3A1E26;
+  --green:#6CC49A; --green-soft:#17362A; --lock:#56627A;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+body{margin:0;min-height:100%;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* top bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--paper);border-bottom:1px solid var(--rule)}
+.bar-in{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px}
+.brand{font-family:var(--serif);font-weight:700;font-size:1.15rem;letter-spacing:-.01em}
+.brand small{font-family:var(--sans);font-weight:400;font-size:.85rem;color:var(--ink-2);margin-left:8px}
+.stats{margin-left:auto;display:flex;gap:18px;font-size:.9rem;color:var(--ink-2)}
+.stats b{color:var(--ink);font-family:var(--mono);font-weight:600}
+
+/* home */
+.home{max-width:1080px;margin:0 auto;padding:28px 20px 60px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:40px}
+@media (max-width:860px){.home{grid-template-columns:1fr;gap:28px}}
+h1{font-family:var(--serif);font-size:2rem;line-height:1.15;margin:0 0 6px;letter-spacing:-.015em}
+.lede{color:var(--ink-2);max-width:56ch;margin:0 0 28px}
+.path{list-style:none;margin:0;padding:0;position:relative}
+.path::before{content:"";position:absolute;left:27px;top:28px;bottom:28px;width:2px;background:var(--rule)}
+.node{position:relative;display:flex;align-items:center;gap:18px;padding:10px 0}
+.dot{position:relative;z-index:1;flex:none;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-weight:600;font-size:1rem;border:2px solid var(--rule);background:var(--surface);color:var(--ink-2)}
+.node.quiz .dot{border-radius:10px}
+.node.done .dot{background:var(--brass);border-color:var(--brass);color:#fff}
+.node.open .dot{border-color:var(--navy);color:var(--ink);box-shadow:0 0 0 5px var(--brass-soft)}
+.node.locked .dot{color:var(--lock)}
+.node-btn{flex:1;text-align:left;background:none;border:0;padding:6px 0;border-radius:6px}
+.node-btn:disabled{cursor:default}
+.node-title{font-family:var(--serif);font-weight:600;font-size:1.1rem;display:block}
+.node.locked .node-title{color:var(--lock)}
+.node-meta{font-size:.85rem;color:var(--ink-2)}
+.node-go{margin-left:auto;flex:none}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;border:2px solid var(--navy);background:var(--navy);color:var(--paper);font-weight:600;padding:11px 20px;min-height:46px}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--rule)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.sm{min-height:38px;padding:7px 14px;font-size:.9rem}
+
+aside h2,.upcoming h2{font-family:var(--serif);font-size:1.2rem;margin:0 0 12px}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:20px}
+.score-big{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+.score-big .num{font-size:2.6rem;font-weight:600;line-height:1}
+.band{font-size:.9rem;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--brass-soft);color:var(--ink)}
+.band.ready{background:var(--green-soft);color:var(--green)}
+.band.low{background:var(--ox-soft);color:var(--oxblood)}
+.help{font-size:.85rem;color:var(--ink-2);margin:6px 0 16px}
+.topic{margin:12px 0}
+.topic-row{display:flex;justify-content:space-between;font-size:.9rem}
+.track{height:8px;background:var(--paper);border-radius:99px;overflow:hidden;margin-top:5px;position:relative}
+.fill{height:100%;background:var(--navy);border-radius:99px;transition:width .6s ease}
+.target{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--brass)}
+.legend{font-size:.8rem;color:var(--ink-2);margin-top:14px;display:flex;align-items:center;gap:8px}
+.legend i{display:inline-block;width:2px;height:12px;background:var(--brass)}
+
+.upcoming{margin-top:36px}
+.tier{border-top:1px solid var(--rule);padding:12px 0;display:grid;grid-template-columns:110px 1fr;gap:12px;font-size:.92rem}
+.tier span:first-child{color:var(--ink-2)}
+.tier .mods{color:var(--lock)}
+.foot{margin-top:18px;font-size:.82rem;color:var(--ink-2)}
+.linkbtn{background:none;border:0;padding:0;text-decoration:underline;color:var(--ink-2);font-size:.82rem}
+
+/* player */
+.player{min-height:100%;display:flex;flex-direction:column}
+.p-head{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);max-width:720px;width:100%;margin:0 auto;padding:16px 20px;display:flex;align-items:center;gap:14px}
+.x{background:none;border:0;font-size:1.5rem;line-height:1;padding:4px 8px;color:var(--ink-2);border-radius:6px}
+.prog{flex:1;height:10px;background:var(--rule);border-radius:99px;overflow:hidden}
+.prog div{height:100%;background:var(--brass);transition:width .35s ease}
+.p-body{flex:1;max-width:720px;width:100%;margin:0 auto;padding:12px 20px 170px}
+.kind{font-size:.85rem;color:var(--ink-2);margin:0 0 8px}
+.q{font-family:var(--serif);font-size:1.45rem;line-height:1.3;margin:0 0 22px;font-weight:600;letter-spacing:-.01em}
+.card-body{font-family:var(--serif);font-size:1.12rem;line-height:1.65;max-width:62ch}
+.card-body p{margin:0 0 14px}
+
+.opts{display:grid;gap:10px}
+.opt{text-align:left;background:var(--surface);border:2px solid var(--rule);border-bottom-width:4px;border-radius:12px;padding:14px 16px;display:flex;gap:14px;align-items:flex-start;font-size:1rem}
+.opt .k{flex:none;width:26px;height:26px;border:1.5px solid var(--rule);border-radius:6px;display:grid;place-items:center;font-family:var(--mono);font-size:.8rem;color:var(--ink-2)}
+.opt[aria-pressed="true"]{border-color:var(--navy);background:var(--brass-soft)}
+.opt.right{border-color:var(--green);background:var(--green-soft)}
+.opt.wrong{border-color:var(--oxblood);background:var(--ox-soft)}
+.opt:disabled{cursor:default}
+
+/* ledger drill: the one bold element */
+.ledger{background:var(--surface);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+.ledger-head{display:grid;grid-template-columns:minmax(120px,190px) 1fr;padding:10px 16px;border-bottom:2px solid var(--navy);font-size:.82rem;color:var(--ink-2)}
+.lrow{display:grid;grid-template-columns:minmax(120px,190px) 1fr;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--rule);background-image:linear-gradient(to right,transparent 0,transparent calc(100% - 1px),var(--rule) 0)}
+.lrow:last-child{border-bottom:0}
+.lrow .lab{font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:.92rem;min-width:64px;padding:7px 12px;border-radius:8px;border:1.5px solid var(--rule);background:var(--paper)}
+.chip[aria-pressed="true"]{border-color:var(--navy);background:var(--brass-soft);font-weight:600}
+.chip.right{border-color:var(--green);background:var(--green-soft);color:var(--green);font-weight:600}
+.chip.wrong{border-color:var(--oxblood);background:var(--ox-soft);color:var(--oxblood);text-decoration:line-through}
+@media (max-width:560px){.lrow,.ledger-head{grid-template-columns:1fr}.ledger-head span:last-child{display:none}}
+.check{margin-top:14px;font-family:var(--mono);font-size:.92rem;padding:12px 16px;border-radius:10px;border:1.5px dashed var(--brass);display:none}
+.check.show{display:block;animation:stamp .35s ease}
+@keyframes stamp{from{transform:scale(.97);opacity:0}to{transform:none;opacity:1}}
+
+.tbl{font-family:var(--mono);font-size:.92rem;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:10px 16px;margin:6px 0 14px;max-width:460px}
+.tbl div{display:flex;justify-content:space-between;padding:3px 0}
+.tbl .h{font-family:var(--sans);font-weight:600;font-size:.82rem;color:var(--ink-2);padding-top:9px}
+.tbl .h:first-child{padding-top:0}
+.tbl .t{border-top:1px solid var(--ink);font-weight:600}
+
+.say{background:var(--surface);border-left:4px solid var(--brass);border-radius:0 10px 10px 0;padding:14px 18px;color:var(--ink-2);font-size:.95rem}
+.model{font-family:var(--serif);font-size:1.05rem;line-height:1.65;background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:18px 20px}
+.model ul{font-family:var(--sans);font-size:.92rem;margin:12px 0 0;padding-left:20px;color:var(--ink-2)}
+.rate{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.rate .opt{justify-content:center;text-align:center;font-weight:600;padding:12px 8px}
+@media (max-width:480px){.rate{grid-template-columns:1fr}}
+
+/* action bar */
+.act{position:fixed;left:0;right:0;bottom:0;z-index:6;border-top:1px solid var(--rule);background:var(--paper);padding-bottom:env(safe-area-inset-bottom,0px)}
+.act.good{background:var(--green-soft);border-color:var(--green)}
+.act.bad{background:var(--ox-soft);border-color:var(--oxblood)}
+.act-in{max-width:720px;margin:0 auto;padding:16px 20px;display:flex;gap:16px;align-items:center}
+.fb{flex:1;font-size:.95rem;min-width:0}
+.fb b{display:block;font-family:var(--serif);font-size:1.15rem;margin-bottom:2px}
+.act.good .fb b{color:var(--green)}
+.act.bad .fb b{color:var(--oxblood)}
+.act .btn{flex:none;min-width:140px}
+@media (max-width:560px){.act-in{flex-direction:column;align-items:stretch}.act .btn{width:100%}}
+
+/* results */
+.res{max-width:620px;margin:0 auto;padding:48px 20px 80px;text-align:center}
+.res h1{font-size:2.2rem}
+.res-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:28px 0}
+.res-grid div{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:16px 8px}
+.res-grid .num{display:block;font-size:1.7rem;font-weight:600}
+.res-grid span:last-child{font-size:.82rem;color:var(--ink-2)}
+.res .panel{text-align:left;margin-bottom:24px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ---------------- CONTENT ----------------
+   Original questions, written for the pilot. Figures in ₹ crore, tax at 25% unless stated. */
+const TOPICS = {
+  stm:"Three statements", link:"Linkages", walk:"Walkthroughs", accr:"Accruals & revenue", cap:"Capex, D&A & intangibles"
+};
+const TARGET = 80; // illustrative benchmark
+
+const LESSONS = [
+{ id:"L1", title:"The three statements", topic:"stm", items:[
+  {t:"card", title:"Income statement", body:["Revenue and expenses over a period, like FY26 or a quarter. It runs from revenue down to net income (PAT in most Indian annual reports).","It's built on accruals, so revenue is booked when earned and costs when incurred, whatever the timing of cash."]},
+  {t:"card", title:"Balance sheet", body:["A snapshot on one date. Assets are what the company controls: cash, receivables, inventory, PP&E. Liabilities are what it owes. Shareholders' equity is what's left for the owners.","Assets always equal liabilities plus equity. Every walkthrough you'll ever do is a test of that one line."]},
+  {t:"card", title:"Cash flow statement", body:["Explains why cash moved over the period. It starts at net income, adds back non-cash charges, adjusts for working capital, then adds investing flows (capex, acquisitions) and financing flows (debt, equity, dividends).","The last line is the net change in cash."]},
+  {id:"1a", t:"mcq", q:"Which statement shows the company at a single point in time?", o:["Income statement","Balance sheet","Cash flow statement","Statement of changes in equity"], a:1, e:"The balance sheet is a snapshot on the reporting date. The other statements cover a period."},
+  {id:"1b", t:"mcq", q:"A partner says: you get one statement to judge whether this business survives the next year. Best pick?", o:["Income statement, because profit drives everything","Balance sheet, because it shows the cash balance","Cash flow statement, because it shows real cash generation","None of them work alone"], a:2, e:"The cash flow statement shows whether the business actually generates cash. Profit can look healthy while working capital or capex drains the bank account."},
+  {id:"1c", t:"mcq", q:"You have FY26's income statement plus the opening and closing balance sheets. What can you rebuild?", o:["Nothing more, you need the notes","The cash flow statement","Next year's income statement","The company's valuation"], a:1, e:"Net income plus the change in every balance sheet line gives you each cash flow statement line. That's why interviewers treat the CFS as the derived statement."},
+  {id:"1d", t:"say", q:"Walk me through the three financial statements.", model:"There are three core statements. The income statement shows revenue and expenses over a period and ends at net income. The balance sheet is a snapshot of assets, liabilities and shareholders' equity on a given date, and assets always equal liabilities plus equity. The cash flow statement starts from net income, adjusts for non-cash charges and working capital to get cash from operations, then adds cash from investing and financing, ending with the net change in cash for the period.", keys:["Period vs point in time","Assets = liabilities + equity","CFS starts at net income","Operating, investing and financing sections"]}
+]},
+{ id:"L2", title:"How the statements link", topic:"link", items:[
+  {t:"card", title:"Net income travels twice", body:["It becomes the first line of the cash flow statement.","It also adds to retained earnings inside shareholders' equity, less any dividends paid."]},
+  {t:"card", title:"Balance sheet changes drive cash", body:["Every movement in a balance sheet line shows up somewhere on the cash flow statement. Working capital items land in operations, PP&E in investing, debt and equity in financing.","Ending cash on the cash flow statement becomes the cash line on the balance sheet. That's the final tie."]},
+  {t:"card", title:"The rule that saves you in interviews", body:["An asset going up uses cash. A liability going up frees cash.","Receivables rise? Cash falls. Payables rise? Cash rises. Say it until it's reflex."]},
+  {id:"2a", t:"mcq", q:"Inventory rises by ₹20 cr during the year. All else equal, cash from operations:", o:["Rises by ₹20 cr","Falls by ₹20 cr","Falls by ₹15 cr","Doesn't change"], a:1, e:"Inventory is an asset. Building it ties up cash, so CFO falls by the full ₹20 cr. No tax effect, since nothing hit the income statement."},
+  {id:"2b", t:"mcq", q:"Trade payables go up by ₹15 cr. Effect on cash from operations?", o:["Up ₹15 cr","Down ₹15 cr","Up ₹11.25 cr","No effect"], a:0, e:"A liability rising means the company is holding on to cash it owes suppliers. CFO rises by ₹15 cr."},
+  {id:"2c", t:"mcq", q:"Where does net income land on the balance sheet?", o:["Cash","Retained earnings, within shareholders' equity","Current liabilities","It doesn't touch the balance sheet"], a:1, e:"Net income, less dividends, accumulates in retained earnings. Cash changes too, but through the cash flow statement."},
+  {id:"2d", t:"say", q:"How do the three statements link together?", model:"Net income from the income statement is the starting line of the cash flow statement and also flows into retained earnings in shareholders' equity. Changes in balance sheet items show up on the cash flow statement: working capital in operations, capex and asset sales in investing, and debt, equity and dividends in financing. The net change in cash at the bottom of the cash flow statement updates the cash balance, so the balance sheet ties.", keys:["NI → top of CFS and retained earnings","BS changes → CFS lines","Ending cash → BS cash"]}
+]},
+{ id:"L3", title:"Walking through a change", topic:"walk", items:[
+  {t:"card", title:"Always go in this order", body:["Income statement, then cash flow statement, then balance sheet.","The balance sheet comes last because it's your check. If both sides don't move by the same amount, you've slipped somewhere."]},
+  {t:"card", title:"Worked example: depreciation up ₹100 cr, tax 25%", table:[["Income statement",null],["Pre-tax income","−100"],["Tax","−25"],["Net income","−75",1],["Cash flow statement",null],["Net income","−75"],["Add back depreciation","+100"],["Cash from operations","+25",1],["Balance sheet",null],["PP&E","−100"],["Cash","+25"],["Total assets","−75",1],["Equity (retained earnings)","−75",1]]},
+  {t:"card", title:"Why a non-cash charge changes cash", body:["Depreciation is tax-deductible, so it cuts the tax bill. That lower cash tax is the ₹25 cr gain.","No tax, no cash effect. Interviewers love asking this as a follow-up."]},
+  {id:"3a", t:"mcq", q:"Depreciation is non-cash. So why does a higher depreciation charge increase cash?", o:["It's added back twice on the CFS","It lowers taxable income, so less tax is paid in cash","It reduces capex","It increases deferred revenue"], a:1, e:"The only cash effect is the tax saving: the charge times the tax rate."},
+  {id:"3b", t:"drill", q:"Amortisation of intangibles rises by ₹40 cr. Tax at 25%.", rows:[["Net income",["−40","−30","−10"],1],["Cash from operations",["+10","−30","+40"],0],["Cash",["−30","+10","0"],1],["Total assets",["−40","−30","+10"],1],["Shareholders' equity",["−30","−40","0"],0]], check:"Assets −30 = Liabilities 0 + Equity −30", e:"Same shape as depreciation: NI −30, add back 40 so CFO +10. Intangibles −40 and cash +10 gives assets −30, matched by equity −30."},
+  {id:"3c", t:"drill", q:"The company books a ₹20 cr employee bonus as an expense this year, payable next year. Tax at 25%.", rows:[["Net income",["−20","−15","0"],1],["Cash from operations",["−15","+5","−20"],1],["Cash",["+5","−15","0"],0],["Liabilities",["+20","+15","0"],0],["Shareholders' equity",["−15","−20","+5"],0]], check:"Assets +5 = Liabilities +20 + Equity −15", e:"The expense cuts NI by 15. The accrued bonus is a liability rising, so add back 20: CFO +5. Cash +5 on the assets side; accrued liability +20 and equity −15 on the other."},
+  {id:"3d", t:"drill", q:"The company buys ₹50 cr of inventory and pays in cash.", rows:[["Net income",["0","−50","−37.5"],0],["Cash from operations",["0","−50","−37.5"],1],["Total assets",["−50","0","+50"],1]], check:"Assets 0 (inventory +50, cash −50) = Liabilities 0 + Equity 0", e:"Nothing hits the income statement until the goods are sold. Inventory up is a use of cash in operations. On the balance sheet one asset swaps for another."},
+  {id:"3e", t:"say", q:"Walk me through a ₹10 cr inventory write-down. Tax at 25%.", model:"On the income statement, the write-down is an expense, so pre-tax income falls by ₹10 cr and net income falls by ₹7.5 cr. On the cash flow statement, net income is down 7.5, but the write-down is non-cash, so I add back 10 and cash from operations rises by 2.5. On the balance sheet, inventory falls by 10 and cash rises by 2.5, so assets are down 7.5. Shareholders' equity is down 7.5 through retained earnings, and it balances.", keys:["NI −7.5","Add back the non-cash 10 → CFO +2.5","Inventory −10, cash +2.5","Equity −7.5 and the BS balances"]}
+]},
+{ id:"L4", title:"Accruals and revenue recognition", topic:"accr", items:[
+  {t:"card", title:"Accrual vs cash accounting", body:["Cash accounting books revenue and expenses when money moves. Accrual accounting books revenue when it's earned and expenses when they're incurred.","Listed Indian companies report under Ind AS, which is accrual-based."]},
+  {t:"card", title:"When is revenue earned?", body:["Under Ind AS 115, revenue is recognised when the company satisfies its performance obligation, meaning it has delivered what it promised.","Collecting cash early doesn't make it revenue."]},
+  {t:"card", title:"Two balances people mix up", body:["Receivables: revenue earned, cash still to come. An asset.","Deferred revenue (a contract liability under Ind AS): cash in hand, revenue still to be earned. A liability that becomes revenue as the company delivers."]},
+  {id:"4a", t:"mcq", q:"An edtech company collects ₹12,000 upfront for a 12-month course. How much revenue does it book in month one?", o:["₹12,000","₹1,000","₹0","₹6,000"], a:1, e:"It earns the fee as it delivers the course, so ₹1,000 a month. The remaining ₹11,000 sits in deferred revenue."},
+  {id:"4b", t:"mcq", q:"Which statement about receivables and deferred revenue is right?", o:["Both are assets","Receivables: earned, not collected. Deferred revenue: collected, not earned","Deferred revenue is booked when a customer owes money","Receivables are a liability until collected"], a:1, e:"They're mirror images on timing. Receivables are an asset; deferred revenue is a liability."},
+  {id:"4c", t:"drill", q:"A customer buys ₹30 cr of goods on 60-day credit. Ignore COGS. Tax at 25%, paid in cash.", rows:[["Net income",["+30","+22.5","0"],1],["Cash from operations",["+22.5","−7.5","+30"],1],["Cash",["−7.5","+22.5","0"],0],["Total assets",["+30","+22.5","−7.5"],1],["Shareholders' equity",["+22.5","+30","0"],0]], check:"Assets +22.5 (receivables +30, cash −7.5) = Liabilities 0 + Equity +22.5", e:"Revenue is earned, so NI rises by 22.5. But receivables rise by 30, a use of cash, so CFO is −7.5. The company has paid tax on money it hasn't collected yet."},
+  {id:"4d", t:"say", q:"When would a company collect cash from a customer and not record it as revenue?", model:"Whenever it's paid before it delivers. Annual software subscriptions billed upfront, airline tickets sold for future travel, coaching or school fees collected for the full year, and customer advances on under-construction real estate are all examples. The cash sits in deferred revenue, a liability, and moves to revenue as the company fulfils its obligation.", keys:["Paid before delivery","2 to 3 concrete examples","Goes to deferred revenue / contract liability","Released as the obligation is met"]}
+]},
+{ id:"L5", title:"Capex, D&A and intangibles", topic:"cap", items:[
+  {t:"card", title:"Capitalise or expense?", body:["If a cost creates a benefit beyond a year, capitalise it. It goes on the balance sheet and is depreciated (tangible) or amortised (intangible) over its useful life.","If it's used up within the period, expense it through the income statement."]},
+  {t:"card", title:"What buying an asset does on day one", body:["A ₹200 cr machine bought with cash touches no income statement line. Cash falls in investing, PP&E rises on the balance sheet.","The P&L only feels it later, through depreciation."]},
+  {t:"card", title:"Goodwill and other intangibles", body:["Goodwill is what an acquirer pays above the fair value of the target's identifiable net assets. Under Ind AS it isn't amortised; it's tested for impairment at least once a year.","Identifiable intangibles with finite lives, like customer contracts or licences, are amortised."]},
+  {id:"5a", t:"mcq", q:"Which of these is most likely capitalised?", o:["A quarterly TV ad campaign","Salaries of factory workers","A new packaging line for the plant","The monthly electricity bill"], a:2, e:"The packaging line serves the business for years. The others are consumed within the period."},
+  {id:"5b", t:"mcq", q:"A company buys ₹200 cr of equipment with cash. Immediate effect on net income?", o:["Falls by ₹200 cr","Falls by ₹150 cr","No change","Rises due to the tax shield"], a:2, e:"Capex hits investing cash flow and PP&E. Net income only moves once depreciation starts."},
+  {id:"5c", t:"mcq", q:"After an acquisition, how is goodwill treated under Ind AS?", o:["Amortised over 10 years","Expensed immediately","Not amortised, tested for impairment at least annually","Written off against reserves"], a:2, e:"Goodwill stays on the balance sheet until an impairment test says it's worth less."},
+  {id:"5d", t:"say", q:"How do you decide whether to capitalise or expense a cost?", model:"It depends on how long the benefit lasts. If a cost creates an asset that benefits the company for more than a year, like a plant, machinery or software it develops, it's capitalised onto the balance sheet and depreciated or amortised over its useful life. If it's consumed within the period, like salaries, rent or raw material used up, it's expensed on the income statement. The choice matters because capitalising lifts near-term profit and pushes the cash outflow into investing.", keys:["Useful life beyond one year","Depreciate or amortise over its life","Examples on both sides","Effect on profit and CFO"]}
+]}
+];
+
+const QUIZ = { id:"Q", title:"Module quiz", items:[
+  {id:"q1", topic:"walk", t:"drill", q:"The company raises ₹100 cr by issuing new shares.", rows:[["Net income",["0","+100","+75"],0],["Cash from financing",["+100","0","+75"],0],["Cash",["+100","+75","0"],0],["Shareholders' equity",["0","+100","+75"],1]], check:"Assets +100 = Liabilities 0 + Equity +100", e:"No income statement effect. Cash comes in through financing and equity rises by the same amount."},
+  {id:"q2", topic:"walk", t:"drill", q:"The company repays ₹40 cr of debt principal.", rows:[["Net income",["−40","−30","0"],2],["Cash",["−40","−30","0"],0],["Liabilities",["0","−40","+40"],1]], check:"Assets −40 = Liabilities −40 + Equity 0", e:"Principal repayment isn't an expense. Only interest hits the income statement."},
+  {id:"q3", topic:"walk", t:"drill", q:"The company writes down ₹80 cr of PP&E. Assume it's tax-deductible at 25%.", rows:[["Net income",["−80","−60","−20"],1],["Cash from operations",["+20","−60","0"],0],["Total assets",["−80","−60","+20"],1],["Shareholders' equity",["−60","−80","0"],0]], check:"Assets −60 (PP&E −80, cash +20) = Liabilities 0 + Equity −60", e:"Non-cash charge, so it plays out like depreciation: NI −60, add back 80, CFO +20."},
+  {id:"q4", topic:"accr", t:"drill", q:"A buyer pays a ₹60 cr advance for a flat to be delivered in two years.", rows:[["Net income",["+60","+45","0"],2],["Cash from operations",["+60","0","+45"],0],["Liabilities",["+60","0","+45"],0]], check:"Assets +60 = Liabilities +60 + Equity 0", e:"Nothing is earned yet. Cash comes in and sits as a contract liability until the flat is handed over."},
+  {id:"q5", topic:"link", t:"mcq", q:"Prepaid expenses rise by ₹10 cr. Cash from operations:", o:["Rises ₹10 cr","Falls ₹10 cr","Falls ₹7.5 cr","No change"], a:1, e:"Prepaids are an asset. Paying ahead uses cash."},
+  {id:"q6", topic:"link", t:"mcq", q:"Under the indirect method, which item does NOT appear in cash from operations?", o:["Depreciation","Change in receivables","Capital expenditure","Change in payables"], a:2, e:"Capex sits in investing activities."},
+  {id:"q7", topic:"accr", t:"mcq", q:"Revenue grew 20% but cash from operations fell. Most likely reason?", o:["Higher depreciation","Receivables and inventory grew faster than sales","A new equity raise","Lower tax rate"], a:1, e:"Working capital build-up absorbs cash even while reported profit grows. A classic red flag to probe."},
+  {id:"q8", topic:"link", t:"mcq", q:"The company pays ₹25 cr in dividends. Effect on net income?", o:["Falls ₹25 cr","Falls ₹18.75 cr","No change","Rises due to lower equity"], a:2, e:"Dividends are a distribution to owners. They reduce cash and retained earnings, and never touch the income statement."},
+  {id:"q9", topic:"cap", t:"mcq", q:"This year, a company capitalises ₹30 cr of software development instead of expensing it. Compared with expensing:", o:["Net income and CFO are both lower","Net income higher, CFO higher, investing cash flow lower","Net income higher, cash flows unchanged in every section","No difference to any statement"], a:1, e:"The cost moves off the P&L (NI up, net of amortisation) and out of operations into investing. Total cash is roughly the same before tax."},
+  {id:"q10", topic:"walk", t:"mcq", q:"Interest expense rises by ₹20 cr, paid in cash. Tax at 25%. Change in cash?", o:["−20","−15","−5","0"], a:1, e:"NI falls by 15 and there's no add-back, since interest is a cash cost. Cash falls by 15."},
+  {id:"q11", topic:"cap", t:"say", q:"Walk me through buying ₹50 cr of equipment funded fully by new debt.", model:"At the moment of purchase nothing hits the income statement. On the cash flow statement, capex of 50 is an outflow in investing and the new debt is an inflow of 50 in financing, so net cash is unchanged. On the balance sheet, PP&E rises by 50 and debt rises by 50, so both sides go up by 50. Later, depreciation and interest will start reducing net income.", keys:["No IS effect on day one","CFI −50, CFF +50, net zero","PP&E +50, debt +50","Mention depreciation and interest later"]},
+  {id:"q12", topic:"stm", t:"say", q:"How can a profitable company go bankrupt?", model:"Profit is an accrual number and bankruptcy is about cash. A company can report profits while cash drains into working capital, for example when receivables and inventory balloon, or into heavy capex. If it also has debt coming due and can't refinance, it runs out of liquidity even though the income statement looks fine. That's why lenders watch cash flow and working capital as closely as profit.", keys:["Profit ≠ cash","Working capital and capex drain cash","Debt maturities / liquidity","Link back to the CFS"]}
+]};
+
+/* ---------------- STATE ---------------- */
+const KEY = "placementos_acct_basic_v1";
+const RATES = [["Nailed it",1],["Mostly there",0.6],["Missed key points",0.2]];
+const fresh = () => ({done:{}, scores:{}, xp:0, streak:0, last:null, quizBest:null});
+let S = fresh();
+try{ const raw = localStorage.getItem(KEY); if(raw) S = Object.assign(fresh(), JSON.parse(raw)); }catch(e){}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function today(){ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
+function touchStreak(){
+  const t = today(); if(S.last===t) return;
+  const y = new Date(); y.setDate(y.getDate()-1);
+  const yk = y.getFullYear()+"-"+(y.getMonth()+1)+"-"+y.getDate();
+  S.streak = (S.last===yk) ? S.streak+1 : 1; S.last = t;
+}
+
+/* every scored item with topic + weight (quiz items count double) */
+const SCORED = [];
+LESSONS.forEach(L => L.items.forEach(it => { if(it.id) SCORED.push({id:it.id, topic:L.topic, w:1}); }));
+QUIZ.items.forEach(it => SCORED.push({id:it.id, topic:it.topic, w:2}));
+
+function readiness(){
+  const per = {}; let num=0, den=0;
+  Object.keys(TOPICS).forEach(k => per[k]={n:0,d:0,seen:0,total:0});
+  SCORED.forEach(s => {
+    const v = S.scores[s.id]; const p = per[s.topic];
+    p.d += s.w; p.total++; den += s.w;
+    if(v!==undefined){ p.n += v*s.w; p.seen++; num += v*s.w; }
+  });
+  const topics = Object.keys(TOPICS).map(k => ({k, name:TOPICS[k], pct: Math.round(100*per[k].n/per[k].d), seen:per[k].seen, total:per[k].total}));
+  return {overall: Math.round(100*num/den), topics};
+}
+function band(p){ return p>=TARGET ? ["Interview ready","ready"] : p>=50 ? ["Getting there",""] : ["Building","low"]; }
+
+function unlocked(i){ return i===0 || !!S.done[LESSONS[i-1].id]; }
+const quizOpen = () => LESSONS.every(L => S.done[L.id]);
+
+/* ---------------- HOME ---------------- */
+const app = document.getElementById("app");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function topBar(){
+  return `<header class="bar"><div class="bar-in"><div class="brand">PlacementOS<small>IB track</small></div>
+  <div class="stats"><span>XP <b>${S.xp}</b></span><span>Streak <b>${S.streak}d</b></span></div></div></header>`;
+}
+
+function home(){
+  const r = readiness(); const [bl,bc] = band(r.overall);
+  let firstOpen = LESSONS.findIndex((L,i)=>unlocked(i) && !S.done[L.id]);
+  const nodes = LESSONS.map((L,i) => {
+    const d = !!S.done[L.id], u = unlocked(i);
+    const cls = d ? "done" : (u ? "open" : "locked");
+    const n = L.items.filter(x=>x.id).length;
+    return `<li class="node ${cls}"><span class="dot" aria-hidden="true">${d?"✓":i+1}</span>
+      <button class="node-btn" data-start="${i}" ${u?"":"disabled"} aria-label="${esc(L.title)}${u?"":" (locked)"}">
+      <span class="node-title">${esc(L.title)}</span><span class="node-meta">${u ? (d?"Completed. Replay to improve your score":`${n} practice questions`) : "Finish the previous lesson to unlock"}</span></button>
+      ${i===firstOpen ? `<button class="btn sm node-go" data-start="${i}">Start</button>` : ""}</li>`;
+  }).join("");
+  const qo = quizOpen(), qd = S.quizBest!==null;
+  const quizNode = `<li class="node quiz ${qd?"done":(qo?"open":"locked")}"><span class="dot" aria-hidden="true">${qd?"✓":"Q"}</span>
+    <button class="node-btn" data-quiz ${qo?"":"disabled"}><span class="node-title">Module quiz</span>
+    <span class="node-meta">${qd ? `Best score ${S.quizBest}%. Retake any time` : (qo ? "12 questions. Counts double toward readiness" : "Unlocks after all five lessons")}</span></button>
+    ${qo && !qd && firstOpen<0 ? `<button class="btn sm node-go" data-quiz>Start</button>`:""}</li>`;
+
+  app.innerHTML = topBar() + `<main class="home">
+  <section>
+    <h1>Accounting, basic</h1>
+    <p class="lede">Module 1 of the IB track. Five short lessons build from the three statements to full walkthroughs, then a quiz checks you can do it under interview conditions.</p>
+    <ol class="path">${nodes}${quizNode}</ol>
+    <div class="upcoming"><h2>Coming next in the IB track</h2>
+      <div class="tier"><span>Foundations</span><span class="mods">Enterprise and equity value, basic</span></div>
+      <div class="tier"><span>Core valuation</span><span class="mods">Valuation basic · DCF basic</span></div>
+      <div class="tier"><span>Deepening</span><span class="mods">Accounting, EV, valuation and DCF advanced</span></div>
+      <div class="tier"><span>Transactions</span><span class="mods">Merger model · LBO model, basic and advanced</span></div>
+      <div class="tier"><span>Specialist</span><span class="mods">Restructuring and distressed M&A</span></div>
+    </div>
+  </section>
+  <aside>
+    <h2>Your readiness</h2>
+    <div class="panel">
+      <div class="score-big"><span class="num">${r.overall}%</span><span class="band ${bc}">${bl}</span></div>
+      <p class="help">Weighted by accuracy across every question in the module. Quiz questions count double; unattempted ones count as zero.</p>
+      ${r.topics.map(t=>`<div class="topic"><div class="topic-row"><span>${t.name}</span><span class="num">${t.pct}%</span></div>
+        <div class="track" role="img" aria-label="${t.name} ${t.pct} percent"><div class="fill" style="width:${t.pct}%"></div><div class="target" style="left:${TARGET}%"></div></div></div>`).join("")}
+      <div class="legend"><i></i>Illustrative shortlist benchmark: ${TARGET}%</div>
+    </div>
+    <p class="foot">Pilot build. Progress is saved in this browser only. <button class="linkbtn" id="reset">Reset progress</button></p>
+  </aside></main>`;
+
+  app.querySelectorAll("[data-start]").forEach(b => b.onclick = () => play(LESSONS[+b.dataset.start], false));
+  app.querySelectorAll("[data-quiz]").forEach(b => b.onclick = () => play(QUIZ, true));
+  document.getElementById("reset").onclick = () => { if(confirm("Clear all progress, XP and streak?")){ S = fresh(); save(); home(); } };
+  window.scrollTo(0,0);
+}
+
+/* ---------------- PLAYER ---------------- */
+let P = null;
+function play(unit, isQuiz){
+  P = {unit, isQuiz, i:0, xp:0, right:0, scored:0, answered:false, sel:null, rate:null, revealed:false};
+  touchStreak(); save(); renderStep();
+}
+
+function renderStep(){
+  const it = P.unit.items[P.i], total = P.unit.items.length;
+  P.answered=false; P.sel = it.t==="drill" ? it.rows.map(()=>null) : null; P.rate=null; P.revealed=false;
+  let body = "", kind = "";
+  if(it.t==="card"){
+    kind = "Concept";
+    body = `<h2 class="q">${esc(it.title)}</h2><div class="card-body">${
+      it.body ? it.body.map(p=>`<p>${esc(p)}</p>`).join("") : ""}${
+      it.table ? `<div class="tbl">${it.table.map(r => r[1]===null ? `<div class="h">${esc(r[0])}</div>` : `<div class="${r[2]?"t":""}"><span>${esc(r[0])}</span><span>${esc(r[1])}</span></div>`).join("")}</div>`:""}</div>`;
+  } else if(it.t==="mcq"){
+    kind = "Pick one";
+    body = `<h2 class="q">${esc(it.q)}</h2><div class="opts" role="group">${it.o.map((o,j)=>
+      `<button class="opt" data-o="${j}" aria-pressed="false"><span class="k">${j+1}</span><span>${esc(o)}</span></button>`).join("")}</div>`;
+  } else if(it.t==="drill"){
+    kind = "Walk it through the statements";
+    body = `<h2 class="q">${esc(it.q)}</h2><div class="ledger"><div class="ledger-head"><span>Line item</span><span>Change (₹ cr)</span></div>${
+      it.rows.map((r,ri)=>`<div class="lrow"><span class="lab">${esc(r[0])}</span><div class="chips" role="group" aria-label="${esc(r[0])}">${
+        r[1].map((c,ci)=>`<button class="chip" data-r="${ri}" data-c="${ci}" aria-pressed="false">${esc(c)}</button>`).join("")}</div></div>`).join("")}</div>
+      <div class="check" id="chk">Balance check: ${esc(it.check)} ✓</div>`;
+  } else if(it.t==="say"){
+    kind = "Answer out loud";
+    body = `<h2 class="q">${esc(it.q)}</h2><div class="say">Say your answer out loud as if you're in the interview, ideally in under a minute. Then reveal the model answer and rate yourself honestly.</div><div id="reveal"></div>`;
+  }
+  app.innerHTML = `<div class="player"><div class="p-head"><button class="x" id="quit" aria-label="Exit lesson">×</button>
+    <div class="prog" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${P.i}"><div style="width:${100*P.i/total}%"></div></div></div>
+    <main class="p-body"><p class="kind">${kind}${P.isQuiz?" · Module quiz":""}</p>${body}</main>
+    <div class="act" id="act"><div class="act-in"><div class="fb" id="fb"></div><button class="btn" id="go"></button></div></div></div>`;
+  document.getElementById("quit").onclick = () => { if(P.i===0 || confirm("Leave now? Answers so far are kept.")) home(); };
+  wire(it); window.scrollTo(0,0);
+}
+
+function setAct(label, enabled, fn){
+  const g = document.getElementById("go"); g.textContent = label; g.disabled = !enabled; g.onclick = fn;
+}
+function feedback(ok, title, text){
+  const a = document.getElementById("act"); a.className = "act " + (ok===null?"":ok?"good":"bad");
+  document.getElementById("fb").innerHTML = title ? `<b>${esc(title)}</b>${esc(text||"")}` : "";
+}
+
+function wire(it){
+  if(it.t==="card"){ setAct("Continue", true, next); return; }
+  if(it.t==="mcq"){
+    const opts = [...document.querySelectorAll(".opt")];
+    opts.forEach(b => b.onclick = () => { if(P.answered) return;
+      opts.forEach(x=>x.setAttribute("aria-pressed","false")); b.setAttribute("aria-pressed","true"); P.sel=+b.dataset.o; setAct("Check",true,checkMcq); });
+    setAct("Check", false, checkMcq);
+    function checkMcq(){
+      P.answered = true; const ok = P.sel===it.a;
+      opts.forEach((b,j)=>{ b.disabled=true; if(j===it.a) b.classList.add("right"); else if(j===P.sel) b.classList.add("wrong"); });
+      score(it.id, ok?1:0); feedback(ok, ok?"Correct":"Not quite", " "+it.e); setAct("Continue", true, next);
+    }
+    return;
+  }
+  if(it.t==="drill"){
+    const chips = [...document.querySelectorAll(".chip")];
+    chips.forEach(b => b.onclick = () => { if(P.answered) return; const r=+b.dataset.r, c=+b.dataset.c;
+      chips.filter(x=>+x.dataset.r===r).forEach(x=>x.setAttribute("aria-pressed","false")); b.setAttribute("aria-pressed","true");
+      P.sel[r]=c; setAct("Check", P.sel.every(v=>v!==null), checkDrill); });
+    setAct("Check", false, checkDrill);
+    function checkDrill(){
+      P.answered = true; let nRight=0;
+      it.rows.forEach((row,ri)=>{ const ans=row[2];
+        chips.filter(x=>+x.dataset.r===ri).forEach(x=>{ x.disabled=true; const c=+x.dataset.c;
+          if(c===ans) x.classList.add("right"); else if(c===P.sel[ri]) x.classList.add("wrong"); });
+        if(P.sel[ri]===ans) nRight++; });
+      const frac = nRight/it.rows.length, ok = frac===1;
+      document.getElementById("chk").classList.add("show");
+      score(it.id, frac); feedback(ok, ok?"Balanced":`${nRight} of ${it.rows.length} lines right`, " "+it.e); setAct("Continue", true, next);
+    }
+    return;
+  }
+  if(it.t==="say"){
+    setAct("Reveal model answer", true, () => {
+      P.revealed = true;
+      document.getElementById("reveal").innerHTML = `<div class="model" style="margin-top:18px">${esc(it.model)}
+        <ul>${it.keys.map(k=>`<li>${esc(k)}</li>`).join("")}</ul></div>
+        <p class="kind" style="margin-top:18px">How close were you?</p>
+        <div class="rate">${RATES.map((r,j)=>`<button class="opt" data-rate="${j}" aria-pressed="false">${r[0]}</button>`).join("")}</div>`;
+      const rb = [...document.querySelectorAll("[data-rate]")];
+      rb.forEach(b => b.onclick = () => { rb.forEach(x=>x.setAttribute("aria-pressed","false")); b.setAttribute("aria-pressed","true"); P.rate=+b.dataset.rate; setAct("Continue", true, () => { score(it.id, RATES[P.rate][1], true); next(); }); });
+      setAct("Continue", false, null);
+      document.getElementById("reveal").scrollIntoView({behavior:"smooth", block:"start"});
+    });
+  }
+}
+
+function score(id, v, verbal){
+  S.scores[id] = v; P.scored++; P.right += v;
+  const gain = verbal ? 5 : Math.round(10*v); P.xp += gain; S.xp += gain; save();
+}
+function next(){
+  P.i++; feedback(null,"");
+  if(P.i < P.unit.items.length) return renderStep();
+  finish();
+}
+
+document.addEventListener("keydown", e => {
+  if(!P || !document.getElementById("go")) return;
+  if(e.key==="Enter" && !e.target.closest("button")){ const g=document.getElementById("go"); if(g && !g.disabled) g.click(); }
+  const it = P.unit.items[P.i]; if(it && it.t==="mcq" && !P.answered && /^[1-4]$/.test(e.key)){ const b=document.querySelector(`.opt[data-o="${+e.key-1}"]`); if(b) b.click(); }
+});
+
+function finish(){
+  const acc = P.scored ? Math.round(100*P.right/P.scored) : 0;
+  let title, note;
+  if(P.isQuiz){
+    S.quizBest = Math.max(S.quizBest||0, acc);
+    title = acc>=70 ? "Module 1 cleared" : "Quiz done";
+    note = acc>=70 ? "You're through Accounting Basic. Enterprise and equity value unlocks when the next module ships." : "Aim for 70% to clear the module. Replay the lessons behind your weakest topic, then retake.";
+  } else {
+    S.done[P.unit.id] = true; S.xp += 20; P.xp += 20;
+    title = "Lesson complete";
+    const idx = LESSONS.indexOf(P.unit);
+    note = idx < LESSONS.length-1 ? `Next up: ${LESSONS[idx+1].title}.` : "All five lessons done. The module quiz is open.";
+  }
+  save();
+  const r = readiness(); const [bl,bc]=band(r.overall);
+  const weakest = [...r.topics].sort((a,b)=>a.pct-b.pct)[0];
+  const xp = P.xp; P = null;
+  app.innerHTML = topBar() + `<main class="res"><h1>${title}</h1><p class="lede" style="margin:0 auto">${esc(note)}</p>
+    <div class="res-grid"><div><span class="num">${acc}%</span><span>Accuracy</span></div>
+    <div><span class="num">+${xp}</span><span>XP earned</span></div>
+    <div><span class="num">${r.overall}%</span><span>Readiness</span></div></div>
+    <div class="panel"><div class="score-big"><span class="num">${r.overall}%</span><span class="band ${bc}">${bl}</span></div>
+    <p class="help">Weakest area right now: <b>${esc(weakest.name)}</b> (${weakest.pct}%).</p></div>
+    <button class="btn" id="back">Back to the path</button></main>`;
+  document.getElementById("back").onclick = home;
+  window.scrollTo(0,0);
+}
+
+home();
+</script>
+</body>
+</html>
